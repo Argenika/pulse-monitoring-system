@@ -44,7 +44,7 @@ Arquitectura desacoplada cliente-servidor:
 
 ---
 
-## 🔄 Flujo del sistema
+##  Flujo del sistema
 
 1. El sistema consulta una API externa (ISS)
 2. Obtiene velocidad del satélite
