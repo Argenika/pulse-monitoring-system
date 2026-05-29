@@ -67,20 +67,20 @@ Arquitectura desacoplada cliente-servidor:
 
 ---
 
-## 📊 Dashboard
+##  Dashboard
 
 El sistema incluye un dashboard interactivo que muestra:
 
-- 📡 Pulses (datos en tiempo real)
-- 🚨 Alerts (eventos críticos)
-- 🧠 Logs (flujo interno del sistema)
-- 📈 Gráfica de velocidad del satélite
+-  Pulses (datos en tiempo real)
+-  Alerts (eventos críticos)
+-  Logs (flujo interno del sistema)
+-  Gráfica de velocidad del satélite
 
 Actualización automática mediante polling cada pocos segundos.
 
 ---
 
-## 🧪 Lógica de negocio
+## Lógica de negocio
 
 ```python
 if data["value"] > 20000:
