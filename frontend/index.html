@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Space Monitoring System</title>
+
+    <style>
+        body {
+            background: #0a0f1c;
+            color: white;
+            font-family: Arial;
+            margin: 0;
+        }
+
+        header {
+            background: #11182b;
+            padding: 20px;
+            font-size: 24px;
+            color: #00d4ff;
+        }
+
+        .pipeline {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+        }
+
+        .pipeline div {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: #1a2238;
+            opacity: 0.3;
+        }
+
+        .active {
+            opacity: 1 !important;
+            background: #00d4ff;
+            color: black;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .panel {
+            flex: 1;
+            background: #1a2238;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .card {
+            background: #0f1629;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .alert {
+            border-left: 5px solid red;
+        }
+
+        .ok {
+            border-left: 5px solid green;
+        }
+
+        #logs {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            background: #0a0f1c;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .log-fetch { color: #00d4ff; }
+        .log-db { color: #00ff88; }
+        .log-alert { color: #ff4d4d; font-weight: bold; }
+
+        canvas {
+            max-height: 300px;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<header>🚀 Space Monitoring System</header>
+
+<!-- PIPELINE -->
+<div class="pipeline">
+    <div id="step-fetch">📡 FETCH</div>
+    <div id="step-db">💾 STORE</div>
+    <div id="step-alert">🚨 ALERT</div>
+</div>
+
+<div class="panel">
+    <h2>📈 Velocity Chart</h2>
+    <canvas id="chart"></canvas>
+</div>
+
+<div class="container">
+
+    <div class="panel">
+        <h2>📡 Pulses</h2>
+        <div id="pulses"></div>
+    </div>
+
+    <div class="panel">
+        <h2>🚨 Alerts</h2>
+        <div id="alerts"></div>
+    </div>
+
+    <div class="panel">
+        <h2>🧠 Logs</h2>
+        <div id="logs"></div>
+    </div>
+
+</div>
+
+<script>
+
+// ---------------- PULSES + ALERTS ----------------
+async function loadData() {
+    const pulses = await fetch("http://127.0.0.1:8000/pulse").then(r => r.json())
+    const alerts = await fetch("http://127.0.0.1:8000/alerts").then(r => r.json())
+
+    const pDiv = document.getElementById("pulses")
+    const aDiv = document.getElementById("alerts")
+
+    pDiv.innerHTML = ""
+    aDiv.innerHTML = ""
+
+    pulses.pulses.slice(-5).reverse().forEach(p => {
+        pDiv.innerHTML += `
+            <div class="card ${p.status}">
+                <b>${p.service}</b><br>
+                Value: ${p.value}<br>
+                Status: ${p.status}
+            </div>
+        `
+    })
+
+    alerts.alerts.slice(-5).reverse().forEach(a => {
+        aDiv.innerHTML += `
+            <div class="card alert">
+                ⚠️ ${a.message}<br>
+                ${a.service}
+            </div>
+        `
+    })
+}
+
+// ---------------- LOGS ----------------
+async function loadLogs() {
+    const res = await fetch("http://127.0.0.1:8000/logs");
+    const data = await res.json();
+
+    const logsDiv = document.getElementById("logs");
+    logsDiv.innerHTML = "";
+
+    const latest = data.logs.slice(-10).reverse();
+
+    latest.forEach(log => {
+        const el = document.createElement("div");
+
+        if (log.includes("Fetch")) el.className = "log-fetch";
+        else if (log.includes("Pulse")) el.className = "log-db";
+        else if (log.includes("ALERT")) el.className = "log-alert";
+
+        el.textContent = log;
+        logsDiv.appendChild(el);
+    });
+
+    animatePipeline(latest);
+}
+
+// ---------------- PIPELINE ----------------
+function animatePipeline(logs) {
+    document.getElementById("step-fetch").classList.remove("active");
+    document.getElementById("step-db").classList.remove("active");
+    document.getElementById("step-alert").classList.remove("active");
+
+    logs.forEach(log => {
+        if (log.includes("Fetch")) document.getElementById("step-fetch").classList.add("active");
+        if (log.includes("Pulse")) document.getElementById("step-db").classList.add("active");
+        if (log.includes("ALERT")) document.getElementById("step-alert").classList.add("active");
+    });
+}
+
+// ---------------- CHART ----------------
+let chart;
+let chartData = [];
+let chartLabels = [];
+let lastValue = null;
+
+function initChart() {
+    const ctx = document.getElementById('chart').getContext('2d');
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'ISS Velocity',
+                data: chartData,
+                borderWidth: 2
+            }]
+        },
+        options: { animation: false }
+    });
+}
+
+async function updateChart() {
+    const res = await fetch("http://127.0.0.1:8000/pulse");
+    const data = await res.json();
+
+    if (!data.pulses || data.pulses.length === 0) return;
+
+    const last = data.pulses[data.pulses.length - 1];
+
+    if (lastValue === last.value) return;
+    lastValue = last.value;
+
+    chartLabels.push(new Date().toLocaleTimeString());
+    chartData.push(last.value);
+
+    if (chartLabels.length > 20) {
+        chartLabels.shift();
+        chartData.shift();
+    }
+
+    chart.update();
+}
+
+// ---------------- INIT ----------------
+initChart();
+setInterval(loadData, 3000);
+setInterval(loadLogs, 2000);
+setInterval(updateChart, 3000);
+
+loadData();
+loadLogs();
+
+</script>
+
+</body>
+</html>
