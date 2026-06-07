@@ -2,7 +2,6 @@
 
 Sistema de monitorización en tiempo real de datos de satélites (ISS) con generación automática de alertas y visualización en dashboard interactivo.
 
- Demo local: http://127.0.0.1:5500/frontend/index.html
 
 ---
 
