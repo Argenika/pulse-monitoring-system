@@ -125,10 +125,12 @@
 
 <script>
 
+const API = "https://pulse-monitoring-system.onrender.com";
+
 // ---------------- PULSES + ALERTS ----------------
 async function loadData() {
-    const pulses = await fetch("http://127.0.0.1:8000/pulse").then(r => r.json())
-    const alerts = await fetch("http://127.0.0.1:8000/alerts").then(r => r.json())
+    const pulses = await fetch(`${API}/pulse`).then(r => r.json())
+    const alerts = await fetch(`${API}/alerts`).then(r => r.json())
 
     const pDiv = document.getElementById("pulses")
     const aDiv = document.getElementById("alerts")
@@ -158,7 +160,7 @@ async function loadData() {
 
 // ---------------- LOGS ----------------
 async function loadLogs() {
-    const res = await fetch("http://127.0.0.1:8000/logs");
+    const res = await fetch(`${API}/logs`);
     const data = await res.json();
 
     const logsDiv = document.getElementById("logs");
@@ -217,7 +219,7 @@ function initChart() {
 }
 
 async function updateChart() {
-    const res = await fetch("http://127.0.0.1:8000/pulse");
+    const res = await fetch(`${API}/pulse`);
     const data = await res.json();
 
     if (!data.pulses || data.pulses.length === 0) return;
